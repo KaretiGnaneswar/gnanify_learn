@@ -1,23 +1,14 @@
 import { useEffect, useState } from 'react'
-import { FiSearch, FiFilter, FiMoreVertical, FiEdit, FiTrash2, FiEye, FiCheck, FiX } from 'react-icons/fi'
-
-type Course = {
-  id: string
-  title: string
-  description: string
-  author: string
-  status: 'draft' | 'published' | 'review'
-  createdAt: string
-  updatedAt: string
-  students: number
-  rating: number
-}
+import { FiSearch, FiMoreVertical, FiEdit, FiTrash2, FiChevronDown, FiChevronUp } from 'react-icons/fi'
+import { coursesService, type Course, type Lesson } from '../services/courses'
 
 export default function Courses() {
   const [courses, setCourses] = useState<Course[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
-  const [statusFilter, setStatusFilter] = useState<'all' | 'draft' | 'published' | 'review'>('all')
+  const [statusFilter, setStatusFilter] = useState<'all' | Course['status']>('all')
+  const [expanded, setExpanded] = useState<number | null>(null)
+  const [lessonsByCourse, setLessonsByCourse] = useState<Record<number, Lesson[]>>({})
 
   useEffect(() => {
     fetchCourses()
@@ -25,31 +16,8 @@ export default function Courses() {
 
   const fetchCourses = async () => {
     try {
-      // Mock data for now - replace with actual API calls
-      setCourses([
-        {
-          id: '1',
-          title: 'React Fundamentals',
-          description: 'Learn the basics of React development',
-          author: 'John Doe',
-          status: 'published',
-          createdAt: '2024-01-15',
-          updatedAt: '2024-01-20',
-          students: 150,
-          rating: 4.8
-        },
-        {
-          id: '2',
-          title: 'Advanced JavaScript',
-          description: 'Deep dive into advanced JavaScript concepts',
-          author: 'Jane Smith',
-          status: 'review',
-          createdAt: '2024-01-18',
-          updatedAt: '2024-01-20',
-          students: 0,
-          rating: 0
-        }
-      ])
+      const data = await coursesService.list()
+      setCourses(Array.isArray(data) ? data : [])
     } catch (error) {
       console.error('Error fetching courses:', error)
     } finally {
@@ -57,34 +25,58 @@ export default function Courses() {
     }
   }
 
-  const filteredCourses = courses.filter(course => {
-    const matchesSearch = course.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         course.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         course.author.toLowerCase().includes(searchTerm.toLowerCase())
-    const matchesStatus = statusFilter === 'all' || course.status === statusFilter
-    
-    return matchesSearch && matchesStatus
-  })
-
-  const updateCourseStatus = async (courseId: string, newStatus: 'draft' | 'published' | 'review') => {
+  const deleteCourse = async (courseId: number) => {
+    if (!confirm('Delete this course? This cannot be undone.')) return
     try {
-      // API call to update course status
-      setCourses(courses.map(course => 
-        course.id === courseId ? { ...course, status: newStatus } : course
-      ))
-    } catch (error) {
-      console.error('Error updating course status:', error)
+      await coursesService.deleteCourse(courseId)
+      setCourses((cs) => cs.filter(c => c.id !== courseId))
+      if (expanded === courseId) setExpanded(null)
+    } catch (e) {
+      console.error('Error deleting course:', e)
+      alert('Failed to delete course')
     }
   }
 
-  const deleteCourse = async (courseId: string) => {
-    if (!confirm('Are you sure you want to delete this course?')) return
-    
+  const toggleExpand = async (courseId: number) => {
+    if (expanded === courseId) {
+      setExpanded(null)
+      return
+    }
+    setExpanded(courseId)
+    if (!lessonsByCourse[courseId]) {
+      try {
+        const lessons = await coursesService.listLessons(courseId)
+        setLessonsByCourse((m) => ({ ...m, [courseId]: lessons }))
+      } catch (e) {
+        console.error('Failed to load lessons', e)
+      }
+    }
+  }
+
+  const filteredCourses = courses.filter(course => {
+    const matchesSearch = (course.title || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         (course.description || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         (course.created_by_name || '').toLowerCase().includes(searchTerm.toLowerCase())
+    const matchesStatus = statusFilter === 'all' || course.status === statusFilter
+    return matchesSearch && matchesStatus
+  })
+
+  const updateCourseStatus = async (_courseId: number, _newStatus: Course['status']) => {
+    // Optional: wire to backend if admin publish API exists
+  }
+
+  const deleteLesson = async (courseId: number, lessonId: number) => {
+    if (!confirm('Delete this lesson?')) return
     try {
-      // API call to delete course
-      setCourses(courses.filter(course => course.id !== courseId))
-    } catch (error) {
-      console.error('Error deleting course:', error)
+      await coursesService.deleteLesson(lessonId)
+      setLessonsByCourse((m) => ({
+        ...m,
+        [courseId]: (m[courseId] || []).filter(l => l.id !== lessonId)
+      }))
+      // reflect count locally
+      setCourses((cs) => cs.map(c => c.id === courseId ? { ...c, total_lessons: (c.total_lessons || 1) - 1 } : c))
+    } catch (e) {
+      console.error('Error deleting lesson:', e)
     }
   }
 
@@ -136,7 +128,7 @@ export default function Courses() {
               <option value="all">All Status</option>
               <option value="draft">Draft</option>
               <option value="published">Published</option>
-              <option value="review">Under Review</option>
+              <option value="archived">Archived</option>
             </select>
           </div>
         </div>
@@ -149,8 +141,8 @@ export default function Courses() {
             <div className="flex justify-between items-start mb-4">
               <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
                 course.status === 'published' ? 'bg-green-100 text-green-800' :
-                course.status === 'review' ? 'bg-yellow-100 text-yellow-800' :
-                'bg-gray-100 text-gray-800'
+                course.status === 'draft' ? 'bg-gray-100 text-gray-800' :
+                'bg-yellow-100 text-yellow-800'
               }`}>
                 {course.status}
               </span>
@@ -170,23 +162,22 @@ export default function Courses() {
             </p>
 
             <div className="flex items-center justify-between text-sm text-gray-500 mb-4">
-              <span>By {course.author}</span>
-              <span>{course.students} students</span>
+              <span>By {course.created_by_name || 'Unknown'}</span>
+              <span>{course.enrollments_count || 0} students</span>
             </div>
 
-            {course.rating > 0 && (
-              <div className="flex items-center text-sm text-gray-600 mb-4">
-                <span className="text-yellow-500">★</span>
-                <span className="ml-1">{course.rating}</span>
-              </div>
-            )}
+            <div className="flex items-center text-sm text-gray-600 mb-4">
+              <span className="text-yellow-500">★</span>
+              <span className="ml-1">{course.average_rating || 0}</span>
+              <span className="ml-2 text-gray-400">({course.total_ratings || 0})</span>
+            </div>
 
             <div className="flex gap-2">
-              <button className="flex-1 btn-secondary text-sm">
-                <FiEye className="inline w-4 h-4 mr-1" />
-                View
+              <button className="flex-1 btn-secondary text-sm" onClick={() => toggleExpand(course.id)}>
+                {expanded === course.id ? <FiChevronUp className="inline w-4 h-4 mr-1" /> : <FiChevronDown className="inline w-4 h-4 mr-1" />}
+                Lessons ({course.total_lessons || 0})
               </button>
-              <button className="flex-1 btn-secondary text-sm">
+              <button className="flex-1 btn-secondary text-sm" disabled>
                 <FiEdit className="inline w-4 h-4 mr-1" />
                 Edit
               </button>
@@ -194,8 +185,39 @@ export default function Courses() {
 
             <div className="mt-4 pt-4 border-t border-gray-200">
               <div className="flex justify-between text-xs text-gray-500">
-                <span>Created: {new Date(course.createdAt).toLocaleDateString()}</span>
-                <span>Updated: {new Date(course.updatedAt).toLocaleDateString()}</span>
+                <span>Created: {course.created_at ? new Date(course.created_at).toLocaleDateString() : '-'}</span>
+                <span>Updated: {course.updated_at ? new Date(course.updated_at).toLocaleDateString() : '-'}</span>
+              </div>
+              {expanded === course.id && (
+                <div className="mt-3 space-y-2">
+                  {(lessonsByCourse[course.id] || []).length === 0 && (
+                    <div className="text-sm text-gray-500">No lessons</div>
+                  )}
+                  {(lessonsByCourse[course.id] || []).map((lesson) => (
+                    <div key={lesson.id} className="flex items-center justify-between bg-gray-50 px-3 py-2 rounded">
+                      <div className="text-sm text-gray-800">
+                        <span className="font-medium">{lesson.title}</span>
+                        <span className="ml-2 text-gray-500">(subtopics: {lesson.subtopics_count || 0})</span>
+                      </div>
+                      <button
+                        className="p-1 text-red-600 hover:bg-red-50 rounded"
+                        onClick={() => deleteLesson(course.id, lesson.id)}
+                        title="Delete lesson"
+                      >
+                        <FiTrash2 className="h-4 w-4" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+              <div className="mt-3 flex justify-end">
+                <button
+                  className="btn-secondary text-sm text-red-600 border-red-200 hover:bg-red-50"
+                  onClick={() => deleteCourse(course.id)}
+                >
+                  <FiTrash2 className="inline w-4 h-4 mr-1" />
+                  Delete Course
+                </button>
               </div>
             </div>
           </div>
