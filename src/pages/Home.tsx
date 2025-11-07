@@ -2,6 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { TUTORIALS } from '../data/tutorials';
+import Seo from '../components/Seo';
 
 export default function Home() {
   const categories = TUTORIALS.map((c) => ({ to: `/tutorials/${c.slug}/${c.topics[0]?.slug ?? 'intro'}`, title: c.title, desc: `${c.topics.length} topics` }));
@@ -14,6 +15,11 @@ export default function Home() {
 
   return (
     <div className="space-y-10">
+      <Seo
+        title="Learnify by Gnanify – Learn Coding, AI, and DSA"
+        description="Learn DSA, AI/ML, Web Development, and more at Gnanify Learn. Structured tutorials, examples, and practice to become job-ready."
+        canonical="/"
+      />
       {/* Hero Section */}
       <motion.section
         initial={{ opacity: 0, y: 20 }}

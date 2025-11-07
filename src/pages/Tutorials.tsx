@@ -1,10 +1,16 @@
 import React from 'react';
 import { Link, Routes, Route, useParams, useLocation } from 'react-router-dom';
 import { TUTORIALS, findTopic, findCategory } from '../data/tutorials';
+import Seo from '../components/Seo';
 
 function CategoryIndex() {
   return (
     <div className="space-y-6">
+      <Seo
+        title="Tutorials – Gnanify Learn"
+        description="Browse structured tutorials across programming, DSA, AI/ML and more at Gnanify Learn."
+        canonical="/tutorials"
+      />
       {TUTORIALS.map((c) => (
         <div key={c.slug} className="card">
           <div className="card-body">
@@ -51,6 +57,11 @@ function TopicDetail() {
 
   return (
     <article ref={articleRef} className="prose prose-slate max-w-none dark:prose-invert">
+      <Seo
+        title={`${t.title} — ${cat?.title ?? 'Tutorial'} | Gnanify Learn`}
+        description={t.summary}
+        canonical={`/tutorials/${category}/${topic}`}
+      />
       <div className="mb-2 text-xs text-neutral-500 dark:text-neutral-400">{t.difficulty} • {t.readTime}</div>
       <h1 ref={titleRef} tabIndex={-1} className="mb-2 outline-none">{t.title}</h1>
       <p className="lead">{t.summary}</p>
