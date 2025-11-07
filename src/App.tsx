@@ -1,41 +1,102 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
-import { AuthProvider } from './context/AuthContext'
-import { ProtectedRoute } from './components/ProtectedRoute'
-import Layout from './components/Layout'
-import Login from './pages/Login'
-import Dashboard from './pages/Dashboard'
-import Users from './pages/Users'
-import Courses from './pages/Courses'
-import Blogs from './pages/Blogs'
-import Problems from './pages/Problems'
-import Analytics from './pages/Analytics'
-import Settings from './pages/Settings'
+import React from 'react';
+import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
+import Layout from './components/layout/Layout';
+import Home from './pages/Home';
+import Tutorials from './pages/Tutorials';
+import Topic from './pages/Topic';
+import Article from './pages/Article';
+import Practice from './pages/Practice';
+import Search from './pages/Search';
+import Login from './pages/Login';
+import Profile from './pages/Profile';
 
 export default function App() {
+  React.useEffect(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      let userObj: any = null;
+      if (params.has('user')) {
+        // base64-encoded JSON blob
+        const decoded = atob(params.get('user') || '');
+        userObj = JSON.parse(decoded);
+      } else if (params.has('name') || params.has('email')) {
+        userObj = {
+          name: params.get('name') || undefined,
+          email: params.get('email') || undefined,
+          token: params.get('token') || undefined,
+        };
+      }
+      if (userObj) {
+        // If token present, persist as auth_token for API calls
+        if (userObj.token) {
+          try { localStorage.setItem('auth_token', userObj.token); } catch {}
+          const API_BASE = (import.meta as any).env?.VITE_API_BASE_URL || 'http://localhost:8000/api';
+          // Try to fetch canonical profile and replace gn_user with it
+          fetch(`${API_BASE}/auth/profile/`, {
+            headers: { Authorization: `Bearer ${userObj.token}` },
+            credentials: 'include',
+          })
+            .then(async (res) => {
+              if (!res.ok) throw new Error('profile fetch failed');
+              return res.json();
+            })
+            .then((profile) => {
+              try { localStorage.setItem('gn_user', JSON.stringify(profile)); } catch {}
+              window.dispatchEvent(new Event('user:changed'));
+            })
+            .catch(() => {
+              // Fallback to whatever was passed
+              try { localStorage.setItem('gn_user', JSON.stringify(userObj)); } catch {}
+              window.dispatchEvent(new Event('user:changed'));
+            });
+        } else {
+          // No token, just persist provided user object
+          try { localStorage.setItem('gn_user', JSON.stringify(userObj)); } catch {}
+          window.dispatchEvent(new Event('user:changed'));
+        }
+        // Clean URL
+        const url = new URL(window.location.href);
+        url.search = '';
+        window.history.replaceState({}, document.title, url.toString());
+      }
+    } catch (e) {
+      // no-op
+    }
+  }, []);
   return (
-    <AuthProvider>
-      <BrowserRouter>
-        <Routes>
-          <Route path="/login" element={<Login />} />
-          <Route
-            path="/*"
-            element={
-              <ProtectedRoute>
-                <Layout />
-              </ProtectedRoute>
-            }
-          >
-            <Route index element={<Navigate to="/dashboard" replace />} />
-            <Route path="dashboard" element={<Dashboard />} />
-            <Route path="users" element={<Users />} />
-            <Route path="courses" element={<Courses />} />
-            <Route path="blogs" element={<Blogs />} />
-            <Route path="problems" element={<Problems />} />
-            <Route path="analytics" element={<Analytics />} />
-            <Route path="settings" element={<Settings />} />
-          </Route>
-        </Routes>
-      </BrowserRouter>
-    </AuthProvider>
-  )
+    <BrowserRouter>
+      <AppRouter />
+    </BrowserRouter>
+  );
 }
+
+function AppRouter() {
+  const location = useLocation();
+  if (location.pathname.startsWith('/search')) {
+    return (
+      <Routes>
+        <Route path="/search" element={<Search />} />
+      </Routes>
+    );
+  }
+  if (location.pathname.startsWith('/login')) {
+    return (
+      <Routes>
+        <Route path="/login" element={<Login />} />
+      </Routes>
+    );
+  }
+  return (
+    <Layout>
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/tutorials/*" element={<Tutorials />} />
+        <Route path="/topic/:slug" element={<Topic />} />
+        <Route path="/article/:slug" element={<Article />} />
+        <Route path="/practice" element={<Practice />} />
+        <Route path="/profile" element={<Profile />} />
+      </Routes>
+    </Layout>
+  );
+}
+
