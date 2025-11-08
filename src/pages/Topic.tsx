@@ -11,7 +11,7 @@ export default function Topic() {
 
   return (
     <article className="prose prose-slate max-w-none dark:prose-invert">
-      <h1 className="mb-4">{(slug || '').replaceAll('-', ' ')}</h1>
+      <h1 className="mb-4">{(slug || '').split('-').join(' ')}</h1>
       <div className="grid md:grid-cols-4 gap-6">
         <div className="md:col-span-3 space-y-6">
           {sections.map((s) => (
@@ -21,20 +21,7 @@ export default function Topic() {
             </section>
           ))}
         </div>
-        <nav className="md:col-span-1 sticky top-20 self-start">
-          <div className="rounded-lg border border-neutral-200 dark:border-neutral-800 p-3">
-            <div className="text-sm font-semibold mb-2">On this page</div>
-            <ul className="text-sm space-y-1">
-              {sections.map((s) => (
-                <li key={s.id}>
-                  <a href={`#${s.id}`} className="text-neutral-600 dark:text-neutral-400 hover:underline">
-                    {s.title}
-                  </a>
-                </li>
-              ))}
-            </ul>
-          </div>
-        </nav>
+        {/* Right column intentionally empty; global sidebar shows Roadmaps & Analytics */}
       </div>
       <div className="mt-6 flex items-center justify-between">
         <Link to="/tutorials" className="text-sm text-emerald-600 dark:text-emerald-400 hover:underline">← Back to Tutorials</Link>

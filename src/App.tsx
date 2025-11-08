@@ -9,6 +9,8 @@ import Practice from './pages/Practice';
 import Search from './pages/Search';
 import Login from './pages/Login';
 import Profile from './pages/Profile';
+import Roadmap from './pages/Roadmap';
+import Subtopic from './pages/Subtopic';
 
 export default function App() {
   React.useEffect(() => {
@@ -91,9 +93,11 @@ function AppRouter() {
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/tutorials/*" element={<Tutorials />} />
+        <Route path="/tutorials/:category/:topic/:subtopic" element={<Subtopic />} />
         <Route path="/topic/:slug" element={<Topic />} />
         <Route path="/article/:slug" element={<Article />} />
         <Route path="/practice" element={<Practice />} />
+        <Route path="/roadmap/:category" element={<Roadmap />} />
         <Route path="/profile" element={<Profile />} />
       </Routes>
     </Layout>

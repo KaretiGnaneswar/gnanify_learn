@@ -29,9 +29,12 @@ export default function Home() {
       >
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
           <div>
+            <div className="inline-block px-3 py-1 rounded-full bg-emerald-100 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300 text-sm font-medium mb-3">
+              Crack Your Dream Job
+            </div>
             <h1 className="text-4xl font-extrabold mb-3 text-emerald-700 dark:text-emerald-400 tracking-tight">Gnanify Learn</h1>
             <p className="text-neutral-700 dark:text-neutral-300 max-w-2xl leading-relaxed">
-              Structured tutorials, examples, and practice sets to help you learn efficiently—crafted with clarity and precision for CSE learners.
+              Master in-demand tech skills with our structured learning paths. Land your dream job with confidence through our comprehensive tutorials and hands-on practice.
             </p>
             <div className="mt-5 flex flex-wrap gap-3">
               <Link

@@ -4,14 +4,12 @@ import CategoriesBar from './CategoriesBar';
 import { Link, useLocation } from 'react-router-dom';
 import SideNavbar from './SideNavbar';
 import { TUTORIALS } from '../../data/tutorials';
+import RoadmapPanel from '../roadmap/RoadmapPanel';
+import ReadingAnalytics from '../analytics/ReadingAnalytics';
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   const location = useLocation();
-  // crude parse: /tutorials/:category/:topic
-  const pathParts = location.pathname.split('/').filter(Boolean);
-  const isTutorials = pathParts[0] === 'tutorials';
-  const currentCategory = isTutorials ? pathParts[1] : undefined;
-  const currentTopic = isTutorials ? pathParts[2] : undefined;
+  const isRoadmap = location.pathname.startsWith('/roadmap');
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-b from-neutral-50 to-neutral-100 dark:from-neutral-900 dark:to-neutral-950 text-neutral-900 dark:text-neutral-100">
       {/* Sticky Navbar */}
@@ -24,9 +22,11 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       <div className="flex-1">
         <div className="flex">
           {/* Left Sidebar */}
-          <aside className="w-64 shrink-0 hidden lg:block">
-            <SideNavbar />
-          </aside>
+          {!isRoadmap && (
+            <aside className="w-64 shrink-0 hidden lg:block">
+              <SideNavbar />
+            </aside>
+          )}
 
           {/* Main Content */}
           <div className="flex-1">
@@ -37,25 +37,14 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 </main>
 
                 {/* Right Sidebar */}
-                <aside className="hidden lg:block shrink-0 lg:w-64 xl:w-72 2xl:w-80">
-                  <div className="sticky top-28 space-y-4">
-                    <div className="p-4 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white/50 dark:bg-neutral-900/50 shadow-sm">
-                      <div className="text-sm font-semibold mb-2">📑 Table of Contents</div>
-                      <ul className="text-sm list-disc list-inside text-neutral-600 dark:text-neutral-400 space-y-1">
-                        <li>Introduction</li>
-                        <li>Syntax</li>
-                        <li>Examples</li>
-                      </ul>
+                {!isRoadmap && (
+                  <aside className="hidden lg:block shrink-0 lg:w-64 xl:w-72 2xl:w-80">
+                    <div className="sticky top-28 space-y-4">
+                      <ReadingAnalytics />
+                      <RoadmapPanel />
                     </div>
-
-                    <div className="p-4 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white/50 dark:bg-neutral-900/50 shadow-sm">
-                      <div className="text-sm font-semibold mb-2">🧠 Practice Zone</div>
-                      <div className="text-sm text-neutral-600 dark:text-neutral-400">
-                        MCQs, coding problems, quizzes — test your knowledge here.
-                      </div>
-                    </div>
-                  </div>
-                </aside>
+                  </aside>
+                )}
               </div>
             </div>
           </div>

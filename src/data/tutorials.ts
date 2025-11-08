@@ -119,7 +119,22 @@ export const TUTORIALS: TutorialCategory[] = CATEGORY_DEFS.map((c) => ({
   slug: c.slug,
   title: c.title,
   topics: makeTopics(c.topicNames, c.summary),
-}));
+})).map((cat) => {
+  // Specialize DSA intro subtopics
+  if (cat.slug === 'dsa') {
+    const intro = cat.topics.find(t => t.slug === 'introduction-to-dsa');
+    if (intro) {
+      intro.sections = [
+        { id: slugify('Introduction'), title: 'Introduction', content: 'What is DSA? Why complexity matters, how to analyze algorithms.' },
+        { id: slugify('Big O Notation'), title: 'Big O Notation', content: 'Upper bound analysis with examples for arrays, loops, nested loops.' },
+        { id: slugify('Big Omega'), title: 'Big Omega', content: 'Lower bound best-case analysis and when it is useful.' },
+        { id: slugify('Theta Notation'), title: 'Theta Notation', content: 'Tight bound and how to prove it with examples.' },
+        { id: slugify('Best / Average / Worst'), title: 'Best / Average / Worst', content: 'Comparing cases for common algorithms and what to report in interviews.' },
+      ];
+    }
+  }
+  return cat;
+});
 
 export function findCategory(slug?: string) {
   return TUTORIALS.find((c) => c.slug === slug);
