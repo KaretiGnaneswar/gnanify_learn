@@ -99,7 +99,7 @@ export default function SideNavbar() {
                                 onChange={() => toggleSectionComplete(catData.slug, t.slug, s.id, t.sections.length)}
                                 className="shrink-0"
                               />
-                              <Link to={`/tutorials/${catData.slug}/${t.slug}#${s.id}`} className="flex-1 text-xs">
+                              <Link to={`/tutorials/${catData.slug}/${t.slug}/${s.id}`} className="flex-1 text-xs">
                                 {s.title}
                               </Link>
                             </li>

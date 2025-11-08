@@ -30,6 +30,7 @@ export default function Navbar() {
   const isAuthed = Boolean(authToken);
   const [searchOpen, setSearchOpen] = useState(false);
   const [loginOpen, setLoginOpen] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
 
   React.useEffect(() => {
     const loadUser = () => {
@@ -60,6 +61,7 @@ export default function Navbar() {
   }, [darkMode]);
 
   const toggleDarkMode = () => setDarkMode((d) => !d);
+  const toggleMobile = () => setMobileOpen((o) => !o);
 
   const handleLogout = () => {
     try {
@@ -108,7 +110,7 @@ export default function Navbar() {
           </Link>
         </nav>
 
-        {/* Center Actions (Hidden on mobile) */}
+        {/* Center/Right Actions (desktop) */}
         <div className="hidden md:flex items-center gap-3">
           <button
             onClick={() => setSearchOpen(true)}
@@ -202,7 +204,105 @@ export default function Navbar() {
             )}
           </button>
         </div>
+
+        {/* Right Actions (mobile) */}
+        <div className="flex md:hidden items-center gap-1">
+          <button
+            onClick={() => setSearchOpen(true)}
+            aria-label="Open search"
+            className="p-2 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800"
+          >
+            <Search className="h-5 w-5" />
+          </button>
+          <button
+            onClick={toggleDarkMode}
+            aria-label="Toggle theme"
+            className="p-2 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800"
+          >
+            {darkMode ? (
+              <Sun className="h-5 w-5 text-yellow-400" />
+            ) : (
+              <Moon className="h-5 w-5" />
+            )}
+          </button>
+          {!isAuthed ? (
+            <button
+              onClick={() => setLoginOpen(true)}
+              className="p-2 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800"
+              aria-label="Login"
+            >
+              <User className="h-5 w-5" />
+            </button>
+          ) : (
+            <button
+              onClick={() => setProfileOpen((o) => !o)}
+              className="p-1.5 rounded-full border border-neutral-200 dark:border-neutral-700 hover:bg-neutral-100 dark:hover:bg-neutral-800"
+              aria-label="Profile menu"
+            >
+              <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-emerald-500 text-white">
+                <User className="h-4 w-4" />
+              </span>
+            </button>
+          )}
+          <button
+            onClick={toggleMobile}
+            aria-expanded={mobileOpen}
+            aria-label="Open menu"
+            className="ml-1 px-3 py-2 rounded-lg border border-neutral-200 dark:border-neutral-700 hover:bg-neutral-100 dark:hover:bg-neutral-800"
+          >
+            {/* Hamburger */}
+            <span className="block w-5 h-0.5 bg-current mb-1" />
+            <span className="block w-5 h-0.5 bg-current mb-1" />
+            <span className="block w-5 h-0.5 bg-current" />
+          </button>
+        </div>
       </div>
+      {/* Mobile Panel */}
+      {mobileOpen && (
+        <div className="md:hidden border-t border-neutral-200 dark:border-neutral-800 bg-white/95 dark:bg-neutral-900/95 backdrop-blur-xl">
+          <div className="mx-auto max-w-7xl px-4 py-3 space-y-2">
+            <div className="grid grid-cols-2 gap-2">
+              <Link to="/tutorials" onClick={() => setMobileOpen(false)} className="px-3 py-3 rounded-lg text-sm font-medium bg-neutral-100 dark:bg-neutral-800">
+                Tutorials
+              </Link>
+              <Link to="/courses" onClick={() => setMobileOpen(false)} className="px-3 py-3 rounded-lg text-sm font-medium bg-neutral-100 dark:bg-neutral-800">
+                Courses
+              </Link>
+              <Link to="/practice" onClick={() => setMobileOpen(false)} className="px-3 py-3 rounded-lg text-sm font-medium bg-neutral-100 dark:bg-neutral-800">
+                Practice
+              </Link>
+              <Link to="/jobs" onClick={() => setMobileOpen(false)} className="px-3 py-3 rounded-lg text-sm font-medium bg-neutral-100 dark:bg-neutral-800">
+                Jobs
+              </Link>
+            </div>
+            <button
+              onClick={() => { setSearchOpen(true); setMobileOpen(false); }}
+              className="w-full inline-flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium rounded-lg border border-neutral-200 dark:border-neutral-700"
+            >
+              <Search className="h-4 w-4" />
+              Search
+            </button>
+            {!isAuthed ? (
+              <button onClick={() => { setLoginOpen(true); setMobileOpen(false); }} className="w-full px-4 py-3 text-sm font-medium rounded-lg bg-emerald-600 text-white">
+                Login
+              </button>
+            ) : (
+              <div className="flex items-center justify-between px-3 py-3 rounded-lg border border-neutral-200 dark:border-neutral-700">
+                <div className="flex items-center gap-2">
+                  <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-emerald-500 text-white">
+                    <User className="h-4 w-4" />
+                  </span>
+                  <div className="text-sm">
+                    <div className="font-medium">{user.full_name || user.name || user.username || 'Guest'}</div>
+                    <div className="text-xs text-neutral-500 dark:text-neutral-400">{user.email || ''}</div>
+                  </div>
+                </div>
+                <button onClick={handleLogout} className="text-sm px-3 py-1.5 rounded-md bg-neutral-100 dark:bg-neutral-800">Sign out</button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </header>
     <SearchModal open={searchOpen} onClose={() => setSearchOpen(false)} />
     <LoginModal open={loginOpen} onClose={() => setLoginOpen(false)} />

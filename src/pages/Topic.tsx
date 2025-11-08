@@ -1,8 +1,10 @@
 import React from 'react';
 import { useParams, Link } from 'react-router-dom';
+import Seo from '../components/Seo';
 
 export default function Topic() {
   const { slug } = useParams();
+  const pretty = (slug || '').split('-').join(' ');
   const sections = [
     { id: 'intro', title: 'Introduction', content: 'This is an introduction to the topic.' },
     { id: 'syntax', title: 'Syntax', content: 'Syntax details and examples.' },
@@ -11,7 +13,12 @@ export default function Topic() {
 
   return (
     <article className="prose prose-slate max-w-none dark:prose-invert">
-      <h1 className="mb-4">{(slug || '').split('-').join(' ')}</h1>
+      <Seo
+        title={`${pretty} | Gnanify Learn`}
+        description={`Overview and examples for ${pretty}.`}
+        canonical={`/topic/${slug}`}
+      />
+      <h1 className="mb-4">{pretty}</h1>
       <div className="grid md:grid-cols-4 gap-6">
         <div className="md:col-span-3 space-y-6">
           {sections.map((s) => (

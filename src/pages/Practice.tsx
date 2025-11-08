@@ -1,4 +1,5 @@
 import React from 'react';
+import Seo from '../components/Seo';
 
 export default function Practice() {
   const sets = [
@@ -8,6 +9,11 @@ export default function Practice() {
   ];
   return (
     <div className="space-y-6">
+      <Seo
+        title="Practice – Gnanify Learn"
+        description="Practice DSA, Java, React, and more. Sharpen your skills with curated problem sets on Gnanify Learn."
+        canonical="/practice"
+      />
       <h1 className="text-2xl font-semibold">Practice</h1>
       <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {sets.map((s, i) => (

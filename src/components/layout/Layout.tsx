@@ -6,6 +6,7 @@ import SideNavbar from './SideNavbar';
 import { TUTORIALS } from '../../data/tutorials';
 import RoadmapPanel from '../roadmap/RoadmapPanel';
 import ReadingAnalytics from '../analytics/ReadingAnalytics';
+import AdSlot from '../ads/AdSlot';
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   const location = useLocation();
@@ -34,6 +35,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               <div className="flex gap-6">
                 <main className="flex-1 min-w-0 bg-white dark:bg-neutral-900 rounded-2xl shadow-sm p-6 transition-all duration-200">
                   {children}
+                  <div className="mt-6 md:hidden">
+                    <AdSlot id="mobile-bottom" sizes="320x100,320x50" className="w-full h-[100px]" />
+                  </div>
                 </main>
 
                 {/* Right Sidebar */}
@@ -41,7 +45,11 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                   <aside className="hidden lg:block shrink-0 lg:w-64 xl:w-72 2xl:w-80">
                     <div className="sticky top-28 space-y-4">
                       <ReadingAnalytics />
+                      <AdSlot id="right-rail-inline" sizes="300x250,336x280" className="w-full h-[250px]" />
                       <RoadmapPanel />
+                      <div className="hidden xl:block">
+                        <AdSlot id="right-rail-sticky" sizes="300x600,160x600" className="w-full h-[600px]" />
+                      </div>
                     </div>
                   </aside>
                 )}
@@ -50,6 +58,19 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           </div>
         </div>
       </div>
+
+      {/* Bottom Ad (above footer) */}
+      {!isRoadmap && (
+        <div className="border-t border-neutral-200/70 dark:border-neutral-800/70 bg-white/50 dark:bg-neutral-900/50">
+          <div className="mx-auto max-w-7xl px-4 py-6">
+            <AdSlot
+              id="bottom-leaderboard"
+              sizes="320x100,728x90,970x250"
+              className="w-full h-[100px] md:h-[90px] xl:h-[250px]"
+            />
+          </div>
+        </div>
+      )}
 
       {/* Footer */}
       <footer className="border-t border-neutral-200 dark:border-neutral-800 bg-white/60 dark:bg-neutral-900/60 backdrop-blur-md">

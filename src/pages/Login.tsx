@@ -1,5 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
+import Seo from '../components/Seo';
 
 export default function Login() {
   const navigate = useNavigate();
@@ -53,6 +54,11 @@ export default function Login() {
 
   return (
     <div className="max-w-md mx-auto">
+      <Seo
+        title="Login – Gnanify Learn"
+        description="Sign in to Gnanify Learn to sync your progress across devices and access personalized learning."
+        canonical="/login"
+      />
       <h1 className="text-2xl font-semibold mb-4">Login</h1>
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>

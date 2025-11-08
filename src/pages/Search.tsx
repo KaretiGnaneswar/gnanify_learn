@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { TUTORIALS } from '../data/tutorials';
+import Seo from '../components/Seo';
 
 export default function Search() {
   const location = useLocation();
@@ -46,7 +47,7 @@ export default function Search() {
         // match sections
         for (const s of t.sections) {
           if (s.title.toLowerCase().includes(query) || s.content.toLowerCase().includes(query)) {
-            out.push({ title: `${s.title} — ${t.title}`, to: `/tutorials/${cat.slug}/${t.slug}#${s.id}`, meta: `Section • ${cat.title}` });
+            out.push({ title: `${s.title} — ${t.title}`, to: `/tutorials/${cat.slug}/${t.slug}/${s.id}`, meta: `Section • ${cat.title}` });
           }
         }
       }
@@ -55,8 +56,14 @@ export default function Search() {
     const seen = new Set<string>();
     return out.filter((r) => (seen.has(r.to) ? false : (seen.add(r.to), true))).slice(0, 50);
   }, [q]);
+  const title = q ? `Search “${q}” – Gnanify Learn` : 'Search – Gnanify Learn';
+  const description = q
+    ? `Find tutorials, topics and subtopics about ${q} across DSA, Web, Python, Java and more.`
+    : 'Search Gnanify Learn tutorials, topics and subtopics across DSA, Web, Python, Java and more.';
+  const canonical = q ? `/search?q=${encodeURIComponent(q)}` : '/search';
   return (
     <div className="space-y-4">
+      <Seo title={title} description={description} canonical={canonical} />
       <div className="flex gap-2">
         <input
           value={q}

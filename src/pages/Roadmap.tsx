@@ -4,6 +4,7 @@ import { findCategory } from "../data/tutorials";
 import { motion } from "framer-motion";
 import { ArrowLeft, Play, Map } from "lucide-react";
 import { getCompleted, toggleComplete, getProgressPercent, getCompletedSections, toggleSectionComplete, getTopicSectionPercent } from "../utils/progress";
+import Seo from "../components/Seo";
 
 export default function Roadmap() {
   const { category } = useParams();
@@ -45,6 +46,11 @@ export default function Roadmap() {
 
   return (
     <div className="max-w-5xl mx-auto p-6 space-y-10">
+      <Seo
+        title={`${cat.title} Roadmap | Gnanify Learn`}
+        description={`Follow the ${cat.title} roadmap with step-by-step topics and subtopics to master the fundamentals with progress tracking.`}
+        canonical={`/roadmap/${cat.slug}`}
+      />
       {/* Header */}
       <div className="flex items-center gap-3">
         <button
@@ -163,7 +169,7 @@ export default function Roadmap() {
                           <span className={`text-sm ${done ? 'line-through text-neutral-500' : 'text-neutral-800 dark:text-neutral-200'}`}>{sec.title}</span>
                         </div>
                         <button
-                          onClick={() => nav(`/tutorials/${cat.slug}/${topic.slug}#${sec.id}`)}
+                          onClick={() => nav(`/tutorials/${cat.slug}/${topic.slug}/${sec.id}`)}
                           className="text-xs text-emerald-600 dark:text-emerald-400 hover:underline"
                         >
                           Read

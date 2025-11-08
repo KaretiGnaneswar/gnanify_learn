@@ -1,4 +1,5 @@
 import React from 'react';
+import Seo from '../components/Seo';
 
 export default function Profile() {
   const [profile, setProfile] = React.useState<any>(() => {
@@ -46,6 +47,11 @@ export default function Profile() {
 
   return (
     <div className="space-y-6">
+      <Seo
+        title="Profile – Gnanify Learn"
+        description="Your account details and learning profile on Gnanify Learn."
+        canonical="/profile"
+      />
       <div>
         <h1 className="text-2xl font-semibold">Profile</h1>
         <p className="text-sm text-neutral-500 dark:text-neutral-400">Your account details shared across Gnanify apps.</p>
