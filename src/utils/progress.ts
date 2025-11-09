@@ -1,36 +1,55 @@
+import { LEARN_API_BASE } from '../services/api';
+
 export type CategoryProgress = {
-  topics: string[]; // completed topic slugs per category
-  sections?: { [topic: string]: string[] }; // completed section ids per topic
+  topics: string[];
+  sections?: { [topic: string]: string[] };
 };
 
 export type RoadmapProgress = {
-  [category: string]: CategoryProgress | string[]; // legacy array supported
+  [category: string]: CategoryProgress | string[];
 };
 
 const KEY = 'gn_progress_v1';
+let MEM_PROGRESS: RoadmapProgress | null = null;
 
-export function readProgress(): RoadmapProgress {
+function getCache(): RoadmapProgress {
+  if (MEM_PROGRESS) return MEM_PROGRESS;
   try {
     const raw = localStorage.getItem(KEY);
-    if (!raw) return {};
-    const val = JSON.parse(raw);
-    if (val && typeof val === 'object') return val as RoadmapProgress;
-    return {};
+    MEM_PROGRESS = raw ? JSON.parse(raw) : {};
   } catch {
-    return {};
+    MEM_PROGRESS = {};
   }
+  return MEM_PROGRESS || {};
 }
 
-export function writeProgress(p: RoadmapProgress) {
+function setCache(p: RoadmapProgress) {
+  MEM_PROGRESS = p;
   try { localStorage.setItem(KEY, JSON.stringify(p)); } catch {}
   try { window.dispatchEvent(new Event('progress:changed')); } catch {}
 }
 
+async function fetchProgress(category: string) {
+  try {
+    const res = await fetch(`${LEARN_API_BASE}/progress/${encodeURIComponent(category)}/`);
+    if (!res.ok) return;
+    const data = await res.json();
+    const cache = getCache();
+    cache[category] = { topics: data?.topics || [], sections: data?.sections || {} };
+    setCache(cache);
+  } catch {}
+}
+
+export function readProgress(): RoadmapProgress { return getCache(); }
+export function writeProgress(p: RoadmapProgress) { setCache(p); }
+
 export function getCompleted(category: string): Set<string> {
-  const p = readProgress();
-  const entry = p[category];
+  // optimistic cache read
+  const entry = getCache()[category];
+  // async refresh in background
+  fetchProgress(category);
   if (Array.isArray(entry)) return new Set(entry);
-  const arr = entry?.topics || [];
+  const arr = (entry as CategoryProgress | undefined)?.topics || [];
   return new Set(arr);
 }
 
@@ -38,42 +57,13 @@ export function isCompleted(category: string, topic: string): boolean {
   return getCompleted(category).has(topic);
 }
 
-export function markComplete(category: string, topic: string) {
-  const p = readProgress();
-  const entry = p[category];
-  let base: CategoryProgress;
-  if (Array.isArray(entry)) {
-    base = { topics: [...entry], sections: {} };
-  } else if (entry) {
-    base = { topics: [...(entry.topics || [])], sections: entry.sections || {} };
-  } else {
-    base = { topics: [], sections: {} };
-  }
-  if (!base.topics.includes(topic)) base.topics.push(topic);
-  p[category] = base;
-  writeProgress(p);
-}
-
-export function markIncomplete(category: string, topic: string) {
-  const p = readProgress();
-  const entry = p[category];
-  let base: CategoryProgress;
-  if (Array.isArray(entry)) {
-    base = { topics: entry.filter((t) => t !== topic), sections: {} };
-  } else if (entry) {
-    base = { topics: (entry.topics || []).filter((t) => t !== topic), sections: entry.sections || {} };
-  } else {
-    base = { topics: [], sections: {} };
-  }
-  // also clear sections for this topic
-  if (base.sections) delete base.sections[topic];
-  p[category] = base;
-  writeProgress(p);
-}
-
-export function toggleComplete(category: string, topic: string) {
-  if (isCompleted(category, topic)) markIncomplete(category, topic);
-  else markComplete(category, topic);
+export async function toggleComplete(category: string, topic: string) {
+  try {
+    await fetch(`${LEARN_API_BASE}/progress/${encodeURIComponent(category)}/${encodeURIComponent(topic)}/`, {
+      method: 'POST'
+    });
+    await fetchProgress(category);
+  } catch {}
 }
 
 export function getProgressPercent(category: string, totalTopics: number): number {
@@ -82,35 +72,38 @@ export function getProgressPercent(category: string, totalTopics: number): numbe
   return Math.min(100, Math.round((completed / totalTopics) * 100));
 }
 
-// Section-level helpers
 export function getCompletedSections(category: string, topic: string): Set<string> {
-  const p = readProgress();
-  const entry = p[category];
+  const entry = getCache()[category];
+  fetchProgress(category);
   if (Array.isArray(entry)) return new Set();
-  const arr = entry?.sections?.[topic] || [];
+  const arr = (entry as CategoryProgress | undefined)?.sections?.[topic] || [];
   return new Set(arr);
 }
 
-export function toggleSectionComplete(category: string, topic: string, sectionId: string, totalSections?: number) {
-  const p = readProgress();
-  const entry = p[category];
-  let base: CategoryProgress = Array.isArray(entry)
-    ? { topics: [...entry], sections: {} }
-    : (entry ? { topics: [...(entry.topics || [])], sections: { ...(entry.sections || {}) } } : { topics: [], sections: {} });
-  const set = new Set(base.sections?.[topic] || []);
-  if (set.has(sectionId)) set.delete(sectionId); else set.add(sectionId);
-  base.sections = base.sections || {};
-  base.sections[topic] = Array.from(set);
-  // If all sections completed, also mark topic complete
-  if (typeof totalSections === 'number' && totalSections > 0 && set.size >= totalSections && !base.topics.includes(topic)) {
-    base.topics.push(topic);
-  }
-  p[category] = base;
-  writeProgress(p);
+export async function toggleSectionComplete(category: string, topic: string, sectionId: string, totalSections?: number) {
+  try {
+    await fetch(`${LEARN_API_BASE}/progress/${encodeURIComponent(category)}/${encodeURIComponent(topic)}/${encodeURIComponent(sectionId)}/`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(typeof totalSections === 'number' ? { totalSections } : {}),
+    });
+    await fetchProgress(category);
+  } catch {}
 }
 
 export function getTopicSectionPercent(category: string, topic: string, totalSections: number): number {
   if (totalSections <= 0) return 0;
   const set = getCompletedSections(category, topic);
   return Math.min(100, Math.round((set.size / totalSections) * 100));
+}
+
+// Back-compat named exports (async). These ensure callers importing these names won't break.
+export async function markComplete(category: string, topic: string) {
+  const cur = isCompleted(category, topic);
+  if (!cur) await toggleComplete(category, topic);
+}
+
+export async function markIncomplete(category: string, topic: string) {
+  const cur = isCompleted(category, topic);
+  if (cur) await toggleComplete(category, topic);
 }

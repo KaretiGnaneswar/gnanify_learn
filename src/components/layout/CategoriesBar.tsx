@@ -1,15 +1,25 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { TUTORIALS } from '../../data/tutorials';
+import { learnApi } from '../../services/learn';
 
 export default function CategoriesBar() {
   const location = useLocation();
-  const items = React.useMemo(() => {
-    return TUTORIALS.map((c) => ({
-      to: `/tutorials/${c.slug}/${c.topics[0]?.slug ?? 'intro'}`,
-      label: c.title.split(' ')[0] === 'Data' ? 'DSA' : c.title.split(' ')[0],
-    }));
+  const [items, setItems] = React.useState<{ to: string; label: string }[]>([]);
+  React.useEffect(() => {
+    let alive = true;
+    learnApi.listCategories()
+      .then((json) => {
+        if (!alive) return;
+        const raw = (json.categories || []).map((c) => ({
+          to: `/tutorials/${c.slug}`,
+          label: c.title.split(' ')[0] === 'Data' ? 'DSA' : c.title.split(' ')[0],
+        }));
+        const seen = new Set<string>();
+        setItems(raw.filter((x) => (seen.has(x.to) ? false : (seen.add(x.to), true))));
+      })
+      .catch(() => {});
+    return () => { alive = false; };
   }, []);
 
   return (

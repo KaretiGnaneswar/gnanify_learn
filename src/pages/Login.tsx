@@ -52,6 +52,14 @@ export default function Login() {
     }
   };
 
+  const redirectToBTA = () => {
+    const BTA_BASE = (import.meta as any).env?.VITE_BTA_BASE_URL || 'https://bta.gnanify.com';
+    const origin = window.location.origin;
+    const callback = `${origin}/auth/callback`;
+    const url = `${BTA_BASE.replace(/\/$/, '')}/login?redirect_uri=${encodeURIComponent(callback)}`;
+    window.location.href = url;
+  };
+
   return (
     <div className="max-w-md mx-auto">
       <Seo
@@ -60,6 +68,10 @@ export default function Login() {
         canonical="/login"
       />
       <h1 className="text-2xl font-semibold mb-4">Login</h1>
+      <div className="space-y-3 mb-6">
+        <button onClick={redirectToBTA} className="btn-primary w-full">Continue with Gnanify</button>
+        <div className="text-xs text-neutral-500 text-center">or use fallback form</div>
+      </div>
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
           <label className="block text-sm mb-1">Email</label>

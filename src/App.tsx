@@ -11,6 +11,7 @@ import Login from './pages/Login';
 import Profile from './pages/Profile';
 import Roadmap from './pages/Roadmap';
 import Subtopic from './pages/Subtopic';
+import AuthCallback from './pages/AuthCallback';
 
 export default function App() {
   React.useEffect(() => {
@@ -85,6 +86,13 @@ function AppRouter() {
     return (
       <Routes>
         <Route path="/login" element={<Login />} />
+      </Routes>
+    );
+  }
+  if (location.pathname.startsWith('/auth/callback')) {
+    return (
+      <Routes>
+        <Route path="/auth/callback" element={<AuthCallback />} />
       </Routes>
     );
   }

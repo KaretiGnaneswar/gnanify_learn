@@ -1,17 +1,56 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { TUTORIALS } from '../data/tutorials';
+import { learnApi } from '../services/learn';
 import Seo from '../components/Seo';
 
 export default function Home() {
-  const categories = TUTORIALS.map((c) => ({ to: `/tutorials/${c.slug}/${c.topics[0]?.slug ?? 'intro'}`, title: c.title, desc: `${c.topics.length} topics` }));
-  const featuredTopics = TUTORIALS.flatMap((c) => c.topics.slice(0, 2).map((t) => ({
-    to: `/tutorials/${c.slug}/${t.slug}`,
-    title: t.title,
-    summary: t.summary,
-    meta: `${t.difficulty} • ${t.readTime}`,
-  }))).slice(0, 6);
+  const [categories, setCategories] = React.useState<Array<{ to: string; title: string; desc: string }>>([]);
+  const [featuredTopics, setFeaturedTopics] = React.useState<Array<{ to: string; title: string; summary?: string; meta?: string }>>([]);
+  const [loading, setLoading] = React.useState(true);
+  React.useEffect(() => {
+    let alive = true;
+    setLoading(true);
+    learnApi.listCategories()
+      .then((json) => {
+        if (!alive) return;
+        const cats = (json.categories || []);
+        const catCards = cats.map((c: any) => {
+          const legacyTopics = Array.isArray(c.topics) ? c.topics : [];
+          const subjectTopics = Array.isArray(c.subjects)
+            ? c.subjects.flatMap((s: any) => (s.topics || []))
+            : [];
+          const totalTopics = subjectTopics.length || legacyTopics.length || 0;
+          return {
+            to: `/tutorials/${c.slug}`,
+            title: c.title,
+            desc: `${totalTopics} topics`,
+          };
+        });
+        setCategories(catCards);
+        const raw = cats.flatMap((c: any) => {
+          const legacy = (c.topics || []).slice(0, 2).map((t: any) => ({
+            to: `/tutorials/${c.slug}/${t.slug}`,
+            title: t.title,
+            summary: t.summary,
+            meta: `${t.difficulty || ''} ${t.readTime ? `• ${t.readTime}` : ''}`.trim(),
+          }));
+          const subjects = Array.isArray(c.subjects)
+            ? c.subjects.flatMap((s: any) => (s.topics || []).slice(0, 2).map((t: any) => ({
+                to: `/tutorials/${c.slug}/${t.tutorialSlug || t.slug}`,
+                title: t.title,
+                summary: t.summary,
+                meta: `${t.difficulty || ''} ${t.readTime ? `• ${t.readTime}` : ''}`.trim(),
+              })))
+            : [];
+          return [...subjects, ...legacy];
+        });
+        const seen = new Set<string>();
+        setFeaturedTopics(raw.filter((x) => (seen.has(x.to) ? false : (seen.add(x.to), true))).slice(0, 6));
+      })
+      .finally(() => { if (alive) setLoading(false); });
+    return () => { alive = false; };
+  }, []);
 
   return (
     <div className="space-y-10">

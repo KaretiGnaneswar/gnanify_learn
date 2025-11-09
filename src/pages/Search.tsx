@@ -1,6 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { TUTORIALS } from '../data/tutorials';
 import Seo from '../components/Seo';
 
 export default function Search() {
@@ -27,35 +26,25 @@ export default function Search() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [q]);
 
-  const results = useMemo(() => {
-    const query = q.trim().toLowerCase();
-    if (!query) return [] as { title: string; to: string; meta: string }[];
-    const out: { title: string; to: string; meta: string }[] = [];
-    for (const cat of TUTORIALS) {
-      // match category
-      if (cat.title.toLowerCase().includes(query)) {
-        out.push({ title: `${cat.title}`, to: `/tutorials/${cat.slug}/${cat.topics[0]?.slug ?? 'intro'}`, meta: 'Category' });
-      }
-      for (const t of cat.topics) {
-        // match topic
-        if (
-          t.title.toLowerCase().includes(query) ||
-          t.summary.toLowerCase().includes(query)
-        ) {
-          out.push({ title: `${t.title} — ${cat.title}`, to: `/tutorials/${cat.slug}/${t.slug}`, meta: `${t.difficulty} • ${t.readTime}` });
-        }
-        // match sections
-        for (const s of t.sections) {
-          if (s.title.toLowerCase().includes(query) || s.content.toLowerCase().includes(query)) {
-            out.push({ title: `${s.title} — ${t.title}`, to: `/tutorials/${cat.slug}/${t.slug}/${s.id}`, meta: `Section • ${cat.title}` });
-          }
-        }
-      }
-    }
-    // de-dup by to
-    const seen = new Set<string>();
-    return out.filter((r) => (seen.has(r.to) ? false : (seen.add(r.to), true))).slice(0, 50);
-  }, [q]);
+  const API = (import.meta as any).env?.VITE_LEARN_API_BASE_URL || '/api/learn';
+  const [results, setResults] = useState<{ title: string; to: string; meta: string }[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  useEffect(() => {
+    let alive = true;
+    const query = q.trim();
+    if (!query) { setResults([]); setError(null); return; }
+    setLoading(true);
+    fetch(`${API}/search?q=${encodeURIComponent(query)}`)
+      .then(async (res) => {
+        if (!res.ok) throw new Error('Search failed');
+        return res.json();
+      })
+      .then((json) => { if (alive) { setResults(json?.results || []); setError(null); } })
+      .catch((e) => { if (alive) setError(e?.message || 'Search failed'); })
+      .finally(() => { if (alive) setLoading(false); });
+    return () => { alive = false; };
+  }, [API, q]);
   const title = q ? `Search “${q}” – Gnanify Learn` : 'Search – Gnanify Learn';
   const description = q
     ? `Find tutorials, topics and subtopics about ${q} across DSA, Web, Python, Java and more.`
@@ -75,9 +64,11 @@ export default function Search() {
       <div className="card">
         <div className="card-body">
           <div className="text-sm font-semibold mb-2">Results {q ? `for "${q}"` : ''}</div>
-          {q && results.length === 0 && (
+          {q && loading && (<div className="text-sm text-neutral-500">Searching…</div>)}
+          {q && !loading && results.length === 0 && !error && (
             <div className="text-sm text-neutral-500">No matches found in categories, topics, or sections.</div>
           )}
+          {error && (<div className="text-sm text-red-600 dark:text-red-400">{error}</div>)}
           <ul className="space-y-2">
             {results.map((r,i)=> (
               <li key={i} className="flex items-center justify-between">
